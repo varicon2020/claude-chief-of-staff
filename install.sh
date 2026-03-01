@@ -58,6 +58,12 @@ CURRENCY=${CURRENCY:-USD}
 read -p "Timezone (e.g., America/New_York): " TIMEZONE
 TIMEZONE=${TIMEZONE:-America/New_York}
 
+# Escape special characters for safe sed replacement
+# Handles: \ / & newlines and other sed metacharacters
+escape_for_sed() {
+    printf '%s' "$1" | sed -e 's/[\/&\\]/\\&/g'
+}
+
 # Create directory structure
 echo ""
 echo -e "${GREEN}Creating directory structure...${NC}"
@@ -71,31 +77,57 @@ mkdir -p "$CLAUDE_DIR/task-outputs"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# Copy and customize CLAUDE.md
+# Copy and customize CLAUDE.md (protect existing config)
 echo -e "${GREEN}Customizing CLAUDE.md...${NC}"
 
-cp "$SCRIPT_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
-
-# Replace placeholders
-sed -i.bak "s/{{YOUR_NAME}}/$USER_NAME/g" "$CLAUDE_DIR/CLAUDE.md"
-sed -i.bak "s/{{YOUR_FIRST_NAME}}/$FIRST_NAME/g" "$CLAUDE_DIR/CLAUDE.md"
-sed -i.bak "s/{{YOUR_ROLE}}/$USER_ROLE/g" "$CLAUDE_DIR/CLAUDE.md"
-sed -i.bak "s/{{YOUR_COMPANY}}/$USER_COMPANY/g" "$CLAUDE_DIR/CLAUDE.md"
-sed -i.bak "s/{{WORK_EMAIL}}/$WORK_EMAIL/g" "$CLAUDE_DIR/CLAUDE.md"
-sed -i.bak "s/{{PERSONAL_EMAIL}}/$PERSONAL_EMAIL/g" "$CLAUDE_DIR/CLAUDE.md"
-sed -i.bak "s|{{COMPANY_URL}}|$COMPANY_URL|g" "$CLAUDE_DIR/CLAUDE.md"
-sed -i.bak "s/{{CURRENCY}}/$CURRENCY/g" "$CLAUDE_DIR/CLAUDE.md"
-sed -i.bak "s|{{TIMEZONE}}|$TIMEZONE|g" "$CLAUDE_DIR/CLAUDE.md"
-
-if [ -n "$DINNER_TIME" ]; then
-    sed -i.bak "s/{{DINNER_TIME}}/$DINNER_TIME/g" "$CLAUDE_DIR/CLAUDE.md"
-fi
-if [ -n "$EARLIEST_MEETING" ]; then
-    sed -i.bak "s/{{EARLIEST_MEETING_TIME}}/$EARLIEST_MEETING/g" "$CLAUDE_DIR/CLAUDE.md"
+if [ -f "$CLAUDE_DIR/CLAUDE.md" ]; then
+    echo -e "${YELLOW}Existing CLAUDE.md found. Backing up to CLAUDE.md.backup${NC}"
+    cp "$CLAUDE_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md.backup"
+    read -p "Overwrite with fresh template? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "  Keeping existing CLAUDE.md"
+        SKIP_CLAUDE_MD=true
+    fi
 fi
 
-# Clean up sed backup files
-rm -f "$CLAUDE_DIR/CLAUDE.md.bak"
+if [ "${SKIP_CLAUDE_MD}" != "true" ]; then
+    cp "$SCRIPT_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
+
+    # Sanitize all user inputs before sed replacement
+    S_USER_NAME=$(escape_for_sed "$USER_NAME")
+    S_FIRST_NAME=$(escape_for_sed "$FIRST_NAME")
+    S_USER_ROLE=$(escape_for_sed "$USER_ROLE")
+    S_USER_COMPANY=$(escape_for_sed "$USER_COMPANY")
+    S_WORK_EMAIL=$(escape_for_sed "$WORK_EMAIL")
+    S_PERSONAL_EMAIL=$(escape_for_sed "$PERSONAL_EMAIL")
+    S_COMPANY_URL=$(escape_for_sed "$COMPANY_URL")
+    S_CURRENCY=$(escape_for_sed "$CURRENCY")
+    S_TIMEZONE=$(escape_for_sed "$TIMEZONE")
+
+    # Replace placeholders with sanitized values
+    sed -i.bak "s/{{YOUR_NAME}}/$S_USER_NAME/g" "$CLAUDE_DIR/CLAUDE.md"
+    sed -i.bak "s/{{YOUR_FIRST_NAME}}/$S_FIRST_NAME/g" "$CLAUDE_DIR/CLAUDE.md"
+    sed -i.bak "s/{{YOUR_ROLE}}/$S_USER_ROLE/g" "$CLAUDE_DIR/CLAUDE.md"
+    sed -i.bak "s/{{YOUR_COMPANY}}/$S_USER_COMPANY/g" "$CLAUDE_DIR/CLAUDE.md"
+    sed -i.bak "s/{{WORK_EMAIL}}/$S_WORK_EMAIL/g" "$CLAUDE_DIR/CLAUDE.md"
+    sed -i.bak "s/{{PERSONAL_EMAIL}}/$S_PERSONAL_EMAIL/g" "$CLAUDE_DIR/CLAUDE.md"
+    sed -i.bak "s/{{COMPANY_URL}}/$S_COMPANY_URL/g" "$CLAUDE_DIR/CLAUDE.md"
+    sed -i.bak "s/{{CURRENCY}}/$S_CURRENCY/g" "$CLAUDE_DIR/CLAUDE.md"
+    sed -i.bak "s/{{TIMEZONE}}/$S_TIMEZONE/g" "$CLAUDE_DIR/CLAUDE.md"
+
+    if [ -n "$DINNER_TIME" ]; then
+        S_DINNER_TIME=$(escape_for_sed "$DINNER_TIME")
+        sed -i.bak "s/{{DINNER_TIME}}/$S_DINNER_TIME/g" "$CLAUDE_DIR/CLAUDE.md"
+    fi
+    if [ -n "$EARLIEST_MEETING" ]; then
+        S_EARLIEST_MEETING=$(escape_for_sed "$EARLIEST_MEETING")
+        sed -i.bak "s/{{EARLIEST_MEETING_TIME}}/$S_EARLIEST_MEETING/g" "$CLAUDE_DIR/CLAUDE.md"
+    fi
+
+    # Clean up sed backup files
+    rm -f "$CLAUDE_DIR/CLAUDE.md.bak"
+fi
 
 # Copy template files (don't overwrite existing)
 echo -e "${GREEN}Installing template files...${NC}"

@@ -153,6 +153,24 @@ A few beliefs this system is built on:
 
 ---
 
+## Security
+
+**Do not commit your personal data to a public fork.** After running the installer, your `~/.claude/` directory will contain sensitive information including contact details, goals, tasks, and communication patterns. The `.gitignore` excludes these files, but if you copy them back into a fork of this repo, double-check before pushing:
+
+```bash
+# Before pushing, verify no personal data is staged
+git diff --cached --name-only
+```
+
+Files that should **never** be committed with real data:
+- `contacts/` (except the example template)
+- `goals.yaml`, `my-tasks.yaml`, `schedules.yaml` (after customization)
+- Any `*.log` files from automated runs
+
+**Automated scheduling note:** The cron examples in `schedules.yaml` and `docs/setup-guide.md` run Claude in a non-interactive session. The message-sending guardrail ("never send without approval") requires a human to type "Send" or "Y" — this cannot happen in a headless cron job. Automated runs are safe for **read-only** operations (morning briefings, task checks) but should **not** be used for triage with send capability. If you automate `/triage`, use `quick` mode (no drafts) or ensure output goes to a log for later review, not direct action.
+
+---
+
 ## Contributing
 
 This is early and evolving. If you build useful commands, improve the templates, or add MCP server guides — contributions are very welcome. I'd love to hear what you build with it.

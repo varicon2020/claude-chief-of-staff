@@ -50,3 +50,12 @@ schedules:
 # 3. Manual: Just type /gm when you start your day
 #
 # Most users start with manual invocation and add automation later.
+#
+# SECURITY NOTE: Automated (cron) runs are non-interactive — there is
+# no human to approve "Send" or "Y" for message sending. Only use
+# automation for read-only commands (/gm, /my-tasks overdue, /enrich stale).
+# Do NOT automate /triage in full mode — use /triage quick instead,
+# or review the output log manually before sending anything.
+# Cron logs may contain sensitive data (email subjects, contact names,
+# calendar details). Protect log files with appropriate permissions:
+#   chmod 600 ~/.claude/logs/*.log

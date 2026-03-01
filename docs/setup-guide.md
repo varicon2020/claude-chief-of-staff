@@ -183,6 +183,12 @@ For users who want Claude to run automatically on a schedule:
 
 ### macOS (cron)
 
+> **Security note:** Cron runs are non-interactive — no human is present to
+> approve sending messages. Only automate read-only commands (`/gm`,
+> `/my-tasks overdue`). For triage, use `quick` mode (no drafts) or review
+> the log manually before acting on it. Log files may contain sensitive data
+> (email subjects, contact names) — restrict permissions accordingly.
+
 ```bash
 # Edit crontab
 crontab -e
@@ -190,8 +196,11 @@ crontab -e
 # Add morning briefing at 7am
 0 7 * * * cd ~ && claude --command "/gm" >> ~/.claude/logs/gm.log 2>&1
 
-# Add midday triage at noon
-0 12 * * * cd ~ && claude --command "/triage digest" >> ~/.claude/logs/triage.log 2>&1
+# Add midday triage at noon (quick mode — read-only, no drafts)
+0 12 * * * cd ~ && claude --command "/triage quick" >> ~/.claude/logs/triage.log 2>&1
+
+# Protect log files
+mkdir -p ~/.claude/logs && chmod 700 ~/.claude/logs
 ```
 
 ### Manual (Recommended for Getting Started)

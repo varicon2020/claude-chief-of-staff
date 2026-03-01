@@ -21,3 +21,16 @@ cache/
 local/
 *.local.md
 *.local.yaml
+
+# Sensitive user data — NEVER commit customized versions of these
+# The repo contains templates; your personal data should stay local
+contacts/*
+!contacts/example-contact.md
+goals.yaml
+my-tasks.yaml
+schedules.yaml
+contact-index.yaml
+email-management.md
+
+# Installed config (lives in ~/.claude/, not in the repo)
+CLAUDE.md.bak
